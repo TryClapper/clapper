@@ -58,8 +58,11 @@ const pickPython = () => {
   if (found && atLeast(version(found, ["--version"]), [3, 13])) return found;
   return "python3";
 };
+// With uv, the Python on the PATH doesn't matter: uv brings its own 3.13 (and some installed Pythons are
+// broken: Homebrew's 3.13 on macOS 26 can't read the macOS version, so pip and uv both refuse it).
+const hasUv = run("uv", ["--version"]).status === 0;
 const python = pickPython();
-const pyV = version(python, ["--version"]);
+const pyV = hasUv ? [3, 13] : version(python, ["--version"]);
 if (process.env.CLAPPER_WHICH_PYTHON === "1" && atLeast(pyV, [3, 13])) {
   console.log(python); // for the tests: which Python the start command would use
   process.exit(0);
@@ -102,30 +105,40 @@ const wanted = createHash("sha256")
   .digest("hex");
 if (!existsSync(stamp) || readFileSync(stamp, "utf8") !== wanted) {
   console.log("Setting up the server (once; a minute or two)…");
-  // With uv, uv makes and fills the environment: no pip involved. (Some Pythons can't set up pip at all:
-  // Homebrew's 3.13 on macOS 26 can't read the macOS version, and pip's first install crashes.)
-  const uv = run("uv", ["--version"]).status === 0;
+  // no stamp means the last setup never finished: start again from nothing rather than build on it
+  rmSync(venv, { recursive: true, force: true });
   const giveUp = (why) => {
     rmSync(venv, { recursive: true, force: true }); // never leave a half-made environment for the next run
     console.error(why);
     process.exit(1);
   };
-  const noPip =
-    "Couldn't set up Python packages with this Python. Install uv (https://docs.astral.sh/uv/: on a Mac, " +
-    "brew install uv) and run this again; it sets everything up without pip.";
-  if (!existsSync(py)) {
-    const made = uv
-      ? run("uv", ["venv", "-q", "--python", python, venv], { stdio: "inherit" })
-      : run(python, ["-m", "venv", venv], { stdio: "inherit" });
-    if (made.status !== 0) giveUp(uv ? "uv couldn't make a Python environment (see above)." : `${noPip}\nOn Linux you may also need: sudo apt install python3-venv`);
+  const getUv =
+    "Install uv and run this again; it sets everything up with its own Python:\n" +
+    (mac ? "  brew install uv\n" : "") +
+    "  curl -LsSf https://astral.sh/uv/install.sh | sh";
+  if (hasUv) {
+    // uv's own Python (downloaded once if needed), never one installed elsewhere that may be broken
+    const made = run("uv", ["venv", "-q", "--managed-python", "--python", "3.13", venv], { stdio: "inherit" });
+    if (made.status !== 0) giveUp("uv couldn't make a Python environment (see above). Check your connection and try again.");
+  } else {
+    if (mac && run(python, ["-c", "import platform, sys; sys.exit(0 if platform.mac_ver()[0] else 1)"]).status !== 0) {
+      giveUp(`Your ${python} can't read the macOS version, so it can't install packages.\n${getUv}`);
+    }
+    if (run(python, ["-m", "venv", venv], { stdio: "inherit" }).status !== 0) {
+      giveUp(`Couldn't make a Python environment with ${python}.\n${getUv}`);
+    }
   }
   const install = (args) =>
-    (uv
+    (hasUv
       ? run("uv", ["pip", "install", "-q", "--python", py, ...args], { stdio: "inherit" })
       : run(py, ["-m", "pip", "install", "--disable-pip-version-check", "-q", ...args], { stdio: "inherit" })
     ).status === 0;
   if (!install([...engine]) || !install(["-e", server])) {
-    giveUp(uv ? "Installing the server's packages failed (see above). Check your connection and try again." : noPip);
+    giveUp(
+      hasUv
+        ? "Installing the server's packages failed (see above). Check your connection and try again."
+        : `Installing the server's packages failed (see above).\n${getUv}`,
+    );
   }
   writeFileSync(stamp, wanted);
 }

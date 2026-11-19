@@ -45,9 +45,11 @@ as long as Clapper is running in your terminal.
 Videos are made with Claude Opus 5.5, the same model the hosted app uses. A video costs about $4–5 for 30
 seconds and about $8–10 for 60 seconds; Anthropic bills this to your Claude key.
 
-Both need [Node 20 or newer](https://nodejs.org), [ffmpeg](https://ffmpeg.org) and Python 3 (the local page
-needs Python 3.13 or newer; it finds `python3.13` or a uv-installed Python by itself). If one is missing, the start command (or Claude, in the plugin) says which one
-and how to install it. It runs on macOS and Linux; on Windows, use WSL.
+Both need [Node 20 or newer](https://nodejs.org) and [ffmpeg](https://ffmpeg.org). The local page also needs
+Python; the easy way is [uv](https://docs.astral.sh/uv/) (`brew install uv` on a Mac), which brings its own
+Python, so the one on your computer doesn't matter. Without uv it needs Python 3.13 or newer. If anything is
+missing, the start command (or Claude, in the plugin) says what and how to install it. It runs on macOS and
+Linux; on Windows, use WSL.
 
 ## Open source or hosted
 
