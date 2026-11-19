@@ -10,7 +10,7 @@
 // computer can drive the server and spend your key. The pass is never printed.
 import { spawn, spawnSync } from "node:child_process";
 import { createHash, randomBytes } from "node:crypto";
-import { existsSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -102,14 +102,30 @@ const wanted = createHash("sha256")
   .digest("hex");
 if (!existsSync(stamp) || readFileSync(stamp, "utf8") !== wanted) {
   console.log("Setting up the server (once; a minute or two)…");
-  if (!existsSync(py) && run(python, ["-m", "venv", venv], { stdio: "inherit" }).status !== 0) {
-    console.error("Couldn't make a Python environment. On Linux: sudo apt install python3-venv");
+  // With uv, uv makes and fills the environment: no pip involved. (Some Pythons can't set up pip at all:
+  // Homebrew's 3.13 on macOS 26 can't read the macOS version, and pip's first install crashes.)
+  const uv = run("uv", ["--version"]).status === 0;
+  const giveUp = (why) => {
+    rmSync(venv, { recursive: true, force: true }); // never leave a half-made environment for the next run
+    console.error(why);
     process.exit(1);
+  };
+  const noPip =
+    "Couldn't set up Python packages with this Python. Install uv (https://docs.astral.sh/uv/: on a Mac, " +
+    "brew install uv) and run this again; it sets everything up without pip.";
+  if (!existsSync(py)) {
+    const made = uv
+      ? run("uv", ["venv", "-q", "--python", python, venv], { stdio: "inherit" })
+      : run(python, ["-m", "venv", venv], { stdio: "inherit" });
+    if (made.status !== 0) giveUp(uv ? "uv couldn't make a Python environment (see above)." : `${noPip}\nOn Linux you may also need: sudo apt install python3-venv`);
   }
-  const pip = (args) => run(py, ["-m", "pip", "install", "--disable-pip-version-check", "-q", ...args], { stdio: "inherit" }).status === 0;
-  if (!pip([...engine]) || !pip(["-e", server])) {
-    console.error("Installing the server's packages failed (see above). Check your connection and try again.");
-    process.exit(1);
+  const install = (args) =>
+    (uv
+      ? run("uv", ["pip", "install", "-q", "--python", py, ...args], { stdio: "inherit" })
+      : run(py, ["-m", "pip", "install", "--disable-pip-version-check", "-q", ...args], { stdio: "inherit" })
+    ).status === 0;
+  if (!install([...engine]) || !install(["-e", server])) {
+    giveUp(uv ? "Installing the server's packages failed (see above). Check your connection and try again." : noPip);
   }
   writeFileSync(stamp, wanted);
 }
@@ -119,6 +135,8 @@ if (run(py, ["-c", "import numpy"]).status !== 0) {
   console.error(`The server's Python environment has no numpy. Remove ${venv} and run this again.`);
   process.exit(1);
 }
+
+if (process.env.CLAPPER_STOP_AFTER_SETUP === "1") process.exit(0); // for the tests
 
 // ---------------------------------------------------------------- the video kit's packages (once)
 
