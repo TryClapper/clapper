@@ -16,6 +16,7 @@ Cancel stops the agent's task (which stops the Claude Code process); the run end
 from __future__ import annotations
 
 import asyncio
+import errno
 import contextlib
 import logging
 import math
@@ -535,6 +536,19 @@ class StoppedError(Exception):
     """A run that finished its work after Cancel was asked for: its result is thrown away."""
 
 
+DISK_FULL: Final = "Your computer's disk is full. Free some space, then try again."
+
+
+def _disk_full(e: BaseException) -> bool:
+    """A full disk anywhere in what went wrong (it can surface wrapped in another error)."""
+    seen: BaseException | None = e
+    while seen is not None:
+        if isinstance(seen, OSError) and seen.errno == errno.ENOSPC:
+            return True
+        seen = seen.__cause__ or seen.__context__
+    return False
+
+
 class Lane:
     """Runs jobs one at a time on a thread of its own, each as an asyncio task that Cancel can stop.
 
@@ -559,6 +573,7 @@ class Lane:
         self.canceled: set[str] = set()
         self._guard = threading.Lock()
         self._thread: threading.Thread | None = None
+        self._unsaved: dict[str, str] = {}  # runs that failed but couldn't be marked so (a full disk): retried
 
     def submit(self, job_id: str) -> None:
         with self._guard:
@@ -622,38 +637,60 @@ class Lane:
             job_id = self.queue.get()
             if job_id is None:
                 return
-            with self._guard:
-                if job_id not in self.waiting:
-                    continue  # canceled while it waited
-                self.waiting.remove(job_id)
-                self.current = (job_id, None, None)
-            loop = asyncio.new_event_loop()
+            for stuck, why in list(self._unsaved.items()):  # space may have been freed since
+                self._fail(stuck, why)
             try:
-                job = self.store.job(job_id)
-                if job is None or job["status"] != "queued":
-                    continue
-                self.store.update_job(job_id, status="running")
-                task = loop.create_task(self._go(job))
-                with self._guard:
-                    self.current = (job_id, loop, task)
-                    if job_id in self.canceled:
-                        task.cancel()  # Cancel came while it was starting
-                try:
-                    output = loop.run_until_complete(task)
-                    self.store.update_job(job_id, status="succeeded", output=output)
-                except (asyncio.CancelledError, StoppedError):
-                    self._canceled(job_id)
-                except RunFailedError as e:
-                    self.store.update_job(job_id, status="failed", error=self.redact(str(e)))
-                except Exception as e:
-                    log.exception("%s run %s failed", self.name, job_id)
-                    why = self.redact(f"{type(e).__name__}: {e}")[:300]
-                    self.store.update_job(job_id, status="failed", error=f"It didn't finish ({why}).")
-            finally:
-                with self._guard:
-                    self.current = None
-                    self.canceled.discard(job_id)
-                loop.close()
+                self._one(job_id)
+            except Exception:  # never let one run end the lane: every run after it would wait forever
+                log.exception("%s lane: run %s", self.name, job_id)
+
+    def _one(self, job_id: str) -> None:
+        with self._guard:
+            if job_id not in self.waiting:
+                return  # canceled while it waited
+            self.waiting.remove(job_id)
+            self.current = (job_id, None, None)
+        loop = asyncio.new_event_loop()
+        try:
+            job = self.store.job(job_id)
+            if job is None or job["status"] != "queued":
+                return
+            self.store.update_job(job_id, status="running")
+            task = loop.create_task(self._go(job))
+            with self._guard:
+                self.current = (job_id, loop, task)
+                if job_id in self.canceled:
+                    task.cancel()  # Cancel came while it was starting
+            try:
+                output = loop.run_until_complete(task)
+                self.store.update_job(job_id, status="succeeded", output=output)
+            except (asyncio.CancelledError, StoppedError):
+                self._canceled(job_id)
+            except RunFailedError as e:
+                self._fail(job_id, self.redact(str(e)))
+            except Exception as e:
+                if _disk_full(e):
+                    self._fail(job_id, DISK_FULL)
+                    return
+                log.exception("%s run %s failed", self.name, job_id)
+                why = self.redact(f"{type(e).__name__}: {e}")[:300]
+                self._fail(job_id, f"It didn't finish ({why}).")
+        finally:
+            with self._guard:
+                self.current = None
+                self.canceled.discard(job_id)
+            loop.close()
+
+    def _fail(self, job_id: str, why: str) -> None:
+        """Mark a run failed; on a full disk even that can fail, so it is kept and tried again later."""
+        for _ in range(2):
+            try:
+                self.store.update_job(job_id, status="failed", error=why)
+            except OSError:
+                continue
+            self._unsaved.pop(job_id, None)
+            return
+        self._unsaved[job_id] = why
 
     async def _go(self, job: dict[str, Any]) -> Any:
         out = self.run(job)
