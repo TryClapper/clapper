@@ -47,16 +47,34 @@ if (!atLeast(nodeV, [20, 0])) {
 if (version("ffmpeg", ["-version"]) === null) {
   missing.push({ what: "ffmpeg", mac: "brew install ffmpeg", linux: "sudo apt install ffmpeg" });
 }
-const python = process.env.CLAPPER_PYTHON || "python3";
+// Python 3.13+: Homebrew's python@3.13 installs as python3.13 (python3 stays the older one) and uv keeps its
+// Pythons off the PATH, so look for those too before saying anything is missing.
+const pickPython = () => {
+  if (process.env.CLAPPER_PYTHON) return process.env.CLAPPER_PYTHON;
+  const names = ["python3", "python3.14", "python3.13"];
+  for (const name of names) if (atLeast(version(name, ["--version"]), [3, 13])) return name;
+  const uv = run("uv", ["python", "find", ">=3.13"]);
+  const found = uv.status === 0 ? uv.stdout.trim() : "";
+  if (found && atLeast(version(found, ["--version"]), [3, 13])) return found;
+  return "python3";
+};
+const python = pickPython();
 const pyV = version(python, ["--version"]);
+if (process.env.CLAPPER_WHICH_PYTHON === "1" && atLeast(pyV, [3, 13])) {
+  console.log(python); // for the tests: which Python the start command would use
+  process.exit(0);
+}
 if (!atLeast(pyV, [3, 13])) {
   const have = pyV ? ` (you have ${pyV.join(".")})` : "";
-  missing.push({ what: `Python 3.13 or newer${have}`, mac: "brew install python@3.13", linux: "sudo apt install python3.13 python3.13-venv (or use uv: uv python install 3.13)" });
+  missing.push({ what: `Python 3.13 or newer${have}`, mac: "brew install python@3.13", linux: "install uv (https://docs.astral.sh/uv/), then: uv python install 3.13" });
 }
 if (missing.length) {
   console.error("Clapper needs a few things before it can make videos:\n");
   for (const m of missing) console.error(`  - ${m.what}: ${mac ? m.mac : m.linux}`);
-  if (pyV && !atLeast(pyV, [3, 13])) console.error("\nIf you install a newer Python under another name, run: CLAPPER_PYTHON=python3.13 node app/start.mjs");
+  if (!atLeast(pyV, [3, 13])) {
+    console.error("\nOr, if you have uv: uv python install 3.13 (this command finds it by itself).");
+    console.error("A Python somewhere else? Run: CLAPPER_PYTHON=/path/to/python3.13 node app/start.mjs");
+  }
   console.error("\nInstall them, then run this again.");
   process.exit(1);
 }
