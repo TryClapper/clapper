@@ -1,0 +1,332 @@
+{
+ "meta": {
+  "title": "Acme launch (kit example: Hook → ProblemStack → ProductDemo → Cta, connected cuts)",
+  "fps": 60,
+  "width": 1920,
+  "height": 1080
+ },
+ "brand": {
+  "bg": "#FAFAFA",
+  "fg": "#111827",
+  "surface": "#FFFFFF",
+  "muted": "#6B7280",
+  "line": "#E5E7EB",
+  "tint": "#F1F5F9",
+  "accent": "#6366F1",
+  "accent2": "#A855F7",
+  "pass": "#14B8A6",
+  "passDark": "#0F766E",
+  "danger": "#DC2626",
+  "dangerTint": "#FEE2E2",
+  "font": "Inter Tight",
+  "mono": "JetBrains Mono",
+  "ui": "Inter"
+ },
+ "scenes": [
+  {
+   "id": "s00",
+   "name": "Hook: the moment it hurts",
+   "beat": "hook",
+   "component": "Hook",
+   "frames": 210,
+   "status": "draft",
+   "vo": "Your release just broke checkout.",
+   "props": {
+    "kind": "chat",
+    "header": "Live chat · Checkout",
+    "caller": [
+     "Maria",
+     "Why is my order total $0.00?"
+    ],
+    "agent": "That's right! Your order total today is $0.00.",
+    "bad": "$0.00",
+    "flag": "Real price: $129.00",
+    "pre": "Your release just broke checkout",
+    "em": "and a customer saw it first.",
+    "caption": "Nobody tested this flow.",
+    "first": [
+     "Silent regressions",
+     "bug",
+     "checkout.spec · 3 failing"
+    ]
+   }
+  },
+  {
+   "id": "s01",
+   "name": "Stack of problems",
+   "beat": "problem",
+   "component": "ProblemStack",
+   "frames": 240,
+   "status": "draft",
+   "vo": "",
+   "props": {
+    "head": "Every release breaks something.",
+    "problems": [
+     [
+      "Silent regressions",
+      "Ships bugs nobody tested for",
+      "bug",
+      "checkout.spec · 3 failing"
+     ],
+     [
+      "Slow pages",
+      "Loses customers at checkout",
+      "timer",
+      "p95 · 4.8 s"
+     ],
+     [
+      "Broken emails",
+      "Sends the wrong price",
+      "mail",
+      "template v7 · $0.00"
+     ],
+     [
+      "Lost revenue",
+      "Refunds pile up",
+      "money",
+      "-$12,400 this week"
+     ],
+     [
+      "Angry users",
+      "Churn before you notice",
+      "user",
+      "NPS 41 → 22"
+     ]
+    ],
+    "punchPre": "And you find out",
+    "punchEm": "too late."
+   }
+  },
+  {
+   "id": "s02",
+   "name": "Product demo",
+   "beat": "fix",
+   "component": "ProductDemo",
+   "frames": 510,
+   "status": "draft",
+   "vo": "",
+   "props": {
+    "app": {
+     "brand": "Acme",
+     "user": "Alex Rivera",
+     "org": "Acme Inc."
+    },
+    "nav": [
+     [
+      "Workspace",
+      [
+       [
+        "Overview",
+        "layout"
+       ],
+       [
+        "Projects",
+        "folder"
+       ],
+       [
+        "Runs",
+        "play"
+       ],
+       [
+        "Reports",
+        "chart"
+       ]
+      ]
+     ],
+     [
+      "Team",
+      [
+       [
+        "Members",
+        "users"
+       ],
+       [
+        "Settings",
+        "settings"
+       ]
+      ]
+     ]
+    ],
+    "list": {
+     "url": "app.acme.io/runs/new",
+     "crumbs": [
+      "Runs",
+      "New run"
+     ],
+     "title": "Checkout flow · v3",
+     "tabs": [
+      "Overview",
+      "Items",
+      "History"
+     ],
+     "nav": "Runs",
+     "action": "Run checks",
+     "listTitle": "Queue",
+     "items": [
+      [
+       "Maria",
+       "Guest checkout"
+      ],
+      [
+       "James",
+       "Saved card"
+      ],
+      [
+       "Priya",
+       "Coupon applied"
+      ],
+      [
+       "Hans",
+       "Gift card"
+      ],
+      [
+       "Sofia",
+       "Express pay"
+      ],
+      [
+       "Omar",
+       "Refund flow"
+      ]
+     ],
+     "rowsTitle": "Checks",
+     "rows": [
+      [
+       "Page speed",
+       "1.2 s",
+       0.9,
+       "pass"
+      ],
+      [
+       "Price shown",
+       "Wrong total",
+       1,
+       "fail"
+      ],
+      [
+       "Email sent",
+       "3.1 s",
+       0.6,
+       "warn"
+      ],
+      [
+       "Payment",
+       "OK",
+       0.95,
+       "pass"
+      ]
+     ]
+    },
+    "report": {
+     "url": "app.acme.io/reports",
+     "crumbs": [
+      "Reports",
+      "Release v4"
+     ],
+     "title": "Release v4 · report",
+     "tabs": [
+      "Summary",
+      "Runs",
+      "Exports"
+     ],
+     "nav": "Reports",
+     "stats": [
+      [
+       "Checks passing",
+       82,
+       100,
+       "%",
+       "▲ from 82%"
+      ],
+      [
+       "Bugs caught",
+       0,
+       14,
+       "",
+       "▲ before release"
+      ],
+      [
+       "Checkout time",
+       4.8,
+       1.2,
+       " s",
+       "▼ 4× faster"
+      ]
+     ],
+     "chartTitle": "Checks passing by release",
+     "points": [
+      [
+       "v1",
+       74
+      ],
+      [
+       "v2",
+       78
+      ],
+      [
+       "v3",
+       82
+      ],
+      [
+       "v4",
+       100
+      ]
+     ],
+     "lo": 70,
+     "hi": 102,
+     "grid": [
+      75,
+      85,
+      95
+     ],
+     "unit": "%"
+    },
+    "tours": [
+     {
+      "eyebrow": "Check",
+      "title": "Catches the wrong price",
+      "body": "Every flow is checked against what the customer should see.",
+      "chips": [
+       [
+        "Wrong total",
+        "fail"
+       ],
+       [
+        "Email slow",
+        "warn"
+       ]
+      ]
+     },
+     {
+      "eyebrow": "Ship",
+      "title": "Proven before release",
+      "body": "Every release re-runs every check, so regressions never reach customers.",
+      "chips": [
+       [
+        "82% → 100%",
+        "pass"
+       ]
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "id": "s03",
+   "name": "CTA",
+   "beat": "logo",
+   "component": "Cta",
+   "frames": 180,
+   "status": "draft",
+   "vo": "",
+   "props": {
+    "word1": "acme",
+    "word2": "HQ",
+    "pre": "Ship it",
+    "em": "without the surprises.",
+    "button": "Start free",
+    "sub": "No credit card",
+    "command": "$ acme run --all"
+   }
+  }
+ ]
+}

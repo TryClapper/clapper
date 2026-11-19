@@ -1,0 +1,16 @@
+Clapper Open Source
+Copyright (C) 2026 the Clapper authors
+
+This program is free software: you can redistribute it and/or modify it under the terms of the GNU Affero
+General Public License as published by the Free Software Foundation, version 3 (see LICENSE).
+
+This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the
+implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU Affero General Public
+License for more details.
+
+Third-party software it uses keeps its own license:
+- Remotion (kit/): the Remotion License, which is not open source. Individuals, for-profit companies with up
+  to 3 employees and non-profits may use it for free; larger companies need a Remotion company license.
+  https://www.remotion.dev/license
+- Fonts (kit/, through Fontsource): the SIL Open Font License 1.1.
+- The packages installed by npm and pip: each under its own license, listed in its package.

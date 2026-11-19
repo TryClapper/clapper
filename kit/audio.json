@@ -1,0 +1,193 @@
+{
+ "bpm": 120,
+ "tension": [
+  "s00",
+  "s01"
+ ],
+ "riser_into": "s02",
+ "groove": [
+  "s02"
+ ],
+ "resolve": "s03",
+ "events": [
+  {
+   "scene": "s01",
+   "frame": 36,
+   "sound": "thud",
+   "gain": 0.7
+  },
+  {
+   "scene": "s01",
+   "frame": 54,
+   "sound": "thud",
+   "gain": 0.7
+  },
+  {
+   "scene": "s01",
+   "frame": 72,
+   "sound": "thud",
+   "gain": 0.7
+  },
+  {
+   "scene": "s01",
+   "frame": 90,
+   "sound": "thud",
+   "gain": 0.7
+  },
+  {
+   "scene": "s01",
+   "frame": 138,
+   "sound": "buzz",
+   "gain": 0.6
+  },
+  {
+   "scene": "s02",
+   "frame": 90,
+   "sound": "click",
+   "gain": 0.9
+  },
+  {
+   "scene": "s02",
+   "frame": 152,
+   "sound": "tick",
+   "gain": 0.4
+  },
+  {
+   "scene": "s02",
+   "frame": 164,
+   "sound": "buzz",
+   "gain": 0.6
+  },
+  {
+   "scene": "s02",
+   "frame": 176,
+   "sound": "blip",
+   "gain": 0.35
+  },
+  {
+   "scene": "s02",
+   "frame": 188,
+   "sound": "tick",
+   "gain": 0.4
+  },
+  {
+   "scene": "s02",
+   "frame": 202,
+   "sound": "pop",
+   "gain": 0.3
+  },
+  {
+   "scene": "s02",
+   "frame": 308,
+   "sound": "click",
+   "gain": 0.9
+  },
+  {
+   "scene": "s02",
+   "frame": 382,
+   "sound": "chime",
+   "gain": 0.4
+  },
+  {
+   "scene": "s02",
+   "frame": 430,
+   "sound": "pop",
+   "gain": 0.3
+  },
+  {
+   "scene": "s03",
+   "frame": 0,
+   "sound": "chime",
+   "gain": 0.55
+  },
+  {
+   "scene": "s03",
+   "frame": 96,
+   "sound": "click",
+   "gain": 0.9
+  },
+  {
+   "scene": "s00",
+   "frame": 8,
+   "sound": "pop",
+   "gain": 0.35
+  },
+  {
+   "scene": "s00",
+   "frame": 34,
+   "sound": "pop",
+   "gain": 0.35
+  },
+  {
+   "scene": "s00",
+   "frame": 40,
+   "sound": "typing",
+   "gain": 0.12,
+   "chars": 47,
+   "cps": 1.3
+  },
+  {
+   "scene": "s00",
+   "frame": 92,
+   "sound": "buzz",
+   "gain": 0.8
+  },
+  {
+   "scene": "s00",
+   "frame": 100,
+   "sound": "buzz",
+   "gain": 0.4
+  },
+  {
+   "scene": "s00",
+   "frame": 108,
+   "sound": "thud",
+   "gain": 0.8
+  },
+  {
+   "scene": "s00",
+   "frame": 180,
+   "sound": "whoosh",
+   "gain": 0.45,
+   "pan": -0.4
+  },
+  {
+   "scene": "s01",
+   "frame": 0,
+   "sound": "thud",
+   "gain": 0.7,
+   "pan": -0.3
+  },
+  {
+   "scene": "s01",
+   "frame": 200,
+   "sound": "whoosh",
+   "gain": 0.45
+  },
+  {
+   "scene": "s01",
+   "frame": 212,
+   "sound": "chime",
+   "gain": 0.35
+  },
+  {
+   "scene": "s01",
+   "frame": 220,
+   "sound": "whoosh",
+   "gain": 0.3
+  },
+  {
+   "scene": "s02",
+   "frame": 2,
+   "sound": "whoosh",
+   "gain": 0.3,
+   "pan": -0.5
+  },
+  {
+   "scene": "s02",
+   "frame": 492,
+   "sound": "whoosh",
+   "gain": 0.35
+  }
+ ]
+}

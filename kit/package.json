@@ -1,0 +1,33 @@
+{
+  "name": "launch-kit",
+  "version": "1.0.0",
+  "description": "",
+  "scripts": {
+    "studio": "remotion studio src/index.ts",
+    "kit": "node scripts/kit.mjs",
+    "fonts": "node scripts/embed-fonts.mjs"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@dicebear/collection": "^9.4.2",
+    "@dicebear/core": "^9.4.3",
+    "@fontsource/instrument-serif": "^5.3.0",
+    "@fontsource/inter": "^5.3.0",
+    "@fontsource/inter-tight": "^5.3.0",
+    "@fontsource/jetbrains-mono": "^5.3.0",
+    "@fontsource/plus-jakarta-sans": "^5.3.0",
+    "@remotion/bundler": "^4.0.543",
+    "@remotion/cli": "^4.0.543",
+    "@remotion/renderer": "^4.0.543",
+    "lucide-react": "^1.72.0",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1",
+    "remotion": "^4.0.543"
+  },
+  "devDependencies": {
+    "@types/react": "^19.3.0",
+    "typescript": "^7.0.2"
+  },
+  "type": "module"
+}

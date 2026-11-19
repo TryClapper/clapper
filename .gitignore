@@ -1,0 +1,11 @@
+node_modules/
+.venv/
+__pycache__/
+*.pyc
+.DS_Store
+# your Claude key (written by the local page); never commit it
+.env
+# what a video build leaves in the kit
+kit/out/
+kit/public/
+kit/src/lib/fonts.gen.ts

@@ -1,0 +1,15 @@
+{
+  "name": "clapper",
+  "description": "Clapper Open Source: launch videos for software products, made from their websites on your own computer.",
+  "owner": {
+    "name": "Clapper",
+    "url": "https://tryclapper.co"
+  },
+  "plugins": [
+    {
+      "name": "clapper",
+      "source": "./",
+      "description": "Make a launch video for your product from its website, rendered on your computer with music and sound effects."
+    }
+  ]
+}

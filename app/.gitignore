@@ -1,0 +1,3 @@
+# the person's Claude key (written by the local server; never commit it)
+.env
+server/.venv/

@@ -1,0 +1,4 @@
+node_modules
+out
+src/lib/fonts.gen.ts
+public/audio/raw.wav

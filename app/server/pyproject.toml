@@ -1,0 +1,33 @@
+# Clapper Open Source: the local server behind the free edition's page (127.0.0.1 only).
+# start.mjs installs the shared video engine (launchframe-providers, launchframe-video) from this repo first,
+# then this package, into oss/app/server/.venv.
+[project]
+name = "clapper-local"
+version = "0.1.0"
+description = "Clapper Open Source: the local server that makes launch videos on your own computer with your own Claude key."
+license = "AGPL-3.0-only"
+requires-python = ">=3.13"
+dependencies = [
+  "launchframe-providers",
+  "launchframe-video",
+  "anthropic>=0.70",
+  "claude-agent-sdk>=0.2.180",
+  "fastapi>=0.115",
+  "uvicorn>=0.32",
+  "httpx>=0.28",
+  "pydantic>=2.10",
+  "python-multipart>=0.0.18",
+  # the kit's scripts/audio.py (music and sound effects) needs numpy; the agent runs it with this
+  # environment's python3
+  "numpy>=2.0",
+]
+
+[project.scripts]
+clapper-local = "clapper_local.app:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["clapper_local"]

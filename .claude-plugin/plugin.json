@@ -1,0 +1,11 @@
+{
+  "name": "clapper",
+  "displayName": "Clapper Open Source",
+  "version": "0.1.0",
+  "description": "Make a launch video for your product from its website: Claude writes the story, builds animated scenes in your site's look and renders an mp4 with music, on your computer.",
+  "author": { "name": "Clapper", "url": "https://tryclapper.co" },
+  "homepage": "https://github.com/TryClapper/clapper",
+  "repository": "https://github.com/TryClapper/clapper",
+  "license": "AGPL-3.0-only",
+  "keywords": ["video", "launch video", "remotion", "marketing"]
+}

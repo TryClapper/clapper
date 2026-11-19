@@ -1,0 +1,148 @@
+#!/usr/bin/env node
+// Clapper Open Source: start the local page.
+//   node app/start.mjs
+// Checks the tools a video needs (Node 20+, ffmpeg, Python 3.13+), says exactly what's missing and how to
+// install it, then sets up the server's Python environment (once), installs the video kit's packages (once),
+// starts the server on 127.0.0.1 and opens the page in the browser.
+//
+// Each launch makes a random pass (CLAPPER_TOKEN, or one you set): the browser is opened with it in the link
+// once and keeps it as a cookie, and the server answers nothing without it, so no other program on this
+// computer can drive the server and spend your key. The pass is never printed.
+import { spawn, spawnSync } from "node:child_process";
+import { createHash, randomBytes } from "node:crypto";
+import { existsSync, readFileSync, writeFileSync } from "node:fs";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
+
+const here = dirname(fileURLToPath(import.meta.url));
+const server = join(here, "server");
+const port = Number(process.env.CLAPPER_PORT || 4317);
+const url = `http://127.0.0.1:${port}/`;
+const mac = process.platform === "darwin";
+
+/** The repo: the public one has kit/ at its top, the private one video/kit/. */
+const findRoot = () => {
+  for (let d = here; d !== dirname(d); d = dirname(d)) {
+    if (existsSync(join(d, "kit", "package.json")) || existsSync(join(d, "video", "kit", "package.json"))) return d;
+  }
+  return null;
+};
+
+const run = (cmd, args, opts = {}) => spawnSync(cmd, args, { encoding: "utf8", ...opts });
+const version = (cmd, args) => {
+  const r = run(cmd, args);
+  if (r.error || r.status !== 0) return null;
+  const m = /(\d+)\.(\d+)(?:\.(\d+))?/.exec(`${r.stdout} ${r.stderr}`);
+  return m ? [Number(m[1]), Number(m[2])] : [0, 0];
+};
+const atLeast = (v, [major, minor]) => v !== null && (v[0] > major || (v[0] === major && v[1] >= minor));
+
+// ---------------------------------------------------------------- the tools
+
+const missing = [];
+const nodeV = process.versions.node.split(".").map(Number);
+if (!atLeast(nodeV, [20, 0])) {
+  missing.push({ what: `Node 20 or newer (you have ${process.versions.node})`, mac: "brew install node", linux: "sudo apt install nodejs npm (or use nvm for a newer one)" });
+}
+if (version("ffmpeg", ["-version"]) === null) {
+  missing.push({ what: "ffmpeg", mac: "brew install ffmpeg", linux: "sudo apt install ffmpeg" });
+}
+const python = process.env.CLAPPER_PYTHON || "python3";
+const pyV = version(python, ["--version"]);
+if (!atLeast(pyV, [3, 13])) {
+  const have = pyV ? ` (you have ${pyV.join(".")})` : "";
+  missing.push({ what: `Python 3.13 or newer${have}`, mac: "brew install python@3.13", linux: "sudo apt install python3.13 python3.13-venv (or use uv: uv python install 3.13)" });
+}
+if (missing.length) {
+  console.error("Clapper needs a few things before it can make videos:\n");
+  for (const m of missing) console.error(`  - ${m.what}: ${mac ? m.mac : m.linux}`);
+  if (pyV && !atLeast(pyV, [3, 13])) console.error("\nIf you install a newer Python under another name, run: CLAPPER_PYTHON=python3.13 node app/start.mjs");
+  console.error("\nInstall them, then run this again.");
+  process.exit(1);
+}
+
+const root = findRoot();
+if (root === null) {
+  console.error("Can't find the video kit next to the app. Run this from inside the Clapper folder you cloned.");
+  process.exit(1);
+}
+
+// ---------------------------------------------------------------- the server's Python environment (once)
+
+const venv = join(server, ".venv");
+const py = join(venv, "bin", "python");
+const engine = ["launchframe_providers", "launchframe_video"].map((name) =>
+  [join(root, "engine", name), join(root, "backend", name)].find((d) => existsSync(join(d, "pyproject.toml"))),
+);
+if (engine.some((d) => d === undefined)) {
+  console.error("Can't find the video engine (engine/launchframe_video). Is the clone complete?");
+  process.exit(1);
+}
+const stamp = join(venv, ".clapper-installed");
+const wanted = createHash("sha256")
+  .update([server, ...engine].map((d) => readFileSync(join(d, "pyproject.toml"), "utf8")).join("\n"))
+  .digest("hex");
+if (!existsSync(stamp) || readFileSync(stamp, "utf8") !== wanted) {
+  console.log("Setting up the server (once; a minute or two)…");
+  if (!existsSync(py) && run(python, ["-m", "venv", venv], { stdio: "inherit" }).status !== 0) {
+    console.error("Couldn't make a Python environment. On Linux: sudo apt install python3-venv");
+    process.exit(1);
+  }
+  const pip = (args) => run(py, ["-m", "pip", "install", "--disable-pip-version-check", "-q", ...args], { stdio: "inherit" }).status === 0;
+  if (!pip([...engine]) || !pip(["-e", server])) {
+    console.error("Installing the server's packages failed (see above). Check your connection and try again.");
+    process.exit(1);
+  }
+  writeFileSync(stamp, wanted);
+}
+// the music and sound effects (the kit's audio.py) run on this environment's numpy: without it a video
+// would come out silent, so say so now rather than after a long run
+if (run(py, ["-c", "import numpy"]).status !== 0) {
+  console.error(`The server's Python environment has no numpy. Remove ${venv} and run this again.`);
+  process.exit(1);
+}
+
+// ---------------------------------------------------------------- the video kit's packages (once)
+
+const kit = existsSync(join(root, "kit", "package.json")) ? join(root, "kit") : join(root, "video", "kit");
+if (!existsSync(join(kit, "node_modules", "remotion"))) {
+  console.log("Installing the video kit's packages (once; a few minutes)…");
+  if (run("npm", ["ci", "--no-audit", "--no-fund", "--loglevel=error"], { cwd: kit, stdio: "inherit" }).status !== 0) {
+    console.error("Installing the video kit's packages failed (see above). Check your connection and try again.");
+    process.exit(1);
+  }
+}
+
+// ---------------------------------------------------------------- start it and open the page
+
+const token = process.env.CLAPPER_TOKEN || randomBytes(32).toString("base64url");
+const env = { ...process.env, CLAPPER_KIT_DIR: kit, CLAPPER_PORT: String(port), CLAPPER_TOKEN: token };
+delete env.ANTHROPIC_API_KEY; // the key the page saves (app/.env) is the only one the server uses
+const child = spawn(py, ["-m", "clapper_local"], { cwd: server, env, stdio: "inherit" });
+child.on("exit", (code) => process.exit(code ?? 0));
+for (const sig of ["SIGINT", "SIGTERM"]) process.on(sig, () => child.kill(sig));
+
+const byHand = () =>
+  console.log(`Open it yourself: start this with CLAPPER_TOKEN=<a secret of yours> and open ${url}?token=<that secret>`);
+
+const open = async () => {
+  for (let i = 0; i < 120; i++) {
+    try {
+      const r = await fetch(`${url}api/key`, { headers: { cookie: `clapper_${port}=${token}` } });
+      if (r.ok) break;
+    } catch {
+      // not up yet
+    }
+    await new Promise((ok) => setTimeout(ok, 500));
+  }
+  console.log(`\nClapper is running: ${url}\nStop it with Ctrl+C.`);
+  if (process.env.CLAPPER_NO_BROWSER) {
+    if (!process.env.CLAPPER_TOKEN) byHand();
+    return;
+  }
+  // the link carries the pass once; the page swaps it for a cookie and drops it from the address bar
+  spawn(mac ? "open" : "xdg-open", [`${url}?token=${encodeURIComponent(token)}`], { stdio: "ignore", detached: true })
+    .on("error", byHand)
+    .on("exit", (code) => code && byHand());
+};
+void open();
